@@ -8,7 +8,6 @@ root = Tk()
 
 root.geometry('700x700')
 root.title('Untitled-Notepad')
-root.wm_iconbitmap("notepad-icon_34386.ico")
 
 
 #Edit menu functions
