@@ -75,7 +75,7 @@ def Pastefile():
 #Edit menu functions
 
 def about():
-    showinfo('Notepad','Notepad By  Prakhar verma !!!! \nkuch padhai vadhai karo \nIAS YAS bano')
+    showinfo('Notepad','Welcome to GreyPad \nThis is a simple notepad application built using Python and Tkinter.\n\n')
 
 
 text_area = Text(root,font='lucida 13' ,)
