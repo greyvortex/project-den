@@ -4,6 +4,10 @@ from tkinter import *
 expression = ""
  
  
+def logger():
+    logg = open("calc_log.txt","a")
+    logg.write(expression + "\n")
+    pass
 
 def press(num): 
     global expression 
