@@ -14,11 +14,11 @@ This project is created **by a beginner, for beginners** — because everyone de
 ## 📦 What's Inside?
 
 Explore projects across these languages:
-- Python 🐍
-- JavaScript 💫
-- Rust ⚙️
-- C / C++ 🧱
-- Bash 🐚
+- Python 
+- JavaScript 
+- Rust 
+- C / C++ 
+- Java
 
 And build mini tools and experiments like:
 - ✅ GUI calculator
