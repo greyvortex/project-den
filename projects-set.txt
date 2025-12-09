@@ -1,0 +1,43 @@
+Project 1: Command-Line File Scanner (Easy)
+Modules covered: os, sys, re, argparse, requests
+
+Project 2: Simple Web Scraper (Moderate)
+Modules covered: requests, beautifulsoup4, lxml, re, argparse
+
+Project 3: Port Scanner with Multi-threading (Moderate)
+Modules covered: socket, threading, os, argparse, requests
+
+Project 4: API-Fueled Recon Tool (Moderate to Hard)
+Modules covered: requests, json, argparse, shodan (or other APIs)
+
+Project 5: Reverse Shell Payload Generator (Hard)
+Modules covered: socket, subprocess, os, sys, argparse, cryptography
+
+Project 6: Personal Data Analysis Dashboard (Hard)
+Modules covered: pandas, matplotlib, flask/fastapi, requests, sqlalchemy, scikit-learn
+
+Project 7: Full-Stack Vulnerability Scanner (Hardest)
+Modules covered: requests, BeautifulSoup4, sqlalchemy, flask/fastapi, nmap, pyfiglet, logging
+
+
+Project 1: Notepad Clone (Easy)
+Modules covered: tkinter, os, sys
+
+Project 2: Rock Paper Scissors GUI (Moderate)
+Modules covered: tkinter, random
+
+Project 3: Image to ASCII Art Converter (Moderate)
+Modules covered: PIL (Pillow), os, sys
+
+Project 4: Weather Dashboard (Moderate)
+Modules covered: requests, tkinter, json, datetime
+
+Project 5: Personal Finance Tracker (Moderate to Hard)
+Modules covered: tkinter, sqlite3, datetime
+
+Project 6: Text Adventure Game (Hard)
+Modules covered: random, time, os, json
+
+Project 7: Virtual Assistant (Hardest)
+Modules covered: speech_recognition, pyttsx3, requests, datetime, os
+
