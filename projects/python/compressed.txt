@@ -1,0 +1,2 @@
+{'Hello': 1, 'this': 2, 'Grey.I': 3, 'Grey': 5, 'also': 5, 'Cybersecurity': 6, 'dont': 7, 'like': 8, 'Defensive': 9, 'hacking': 12, 'defensive': 11, 'broing.': 12}
+1 , 2 is 3 am 4 as i am a 5 hat 5 i am in 6 . i 7 8 9 10 , as 11 12 is 12 
