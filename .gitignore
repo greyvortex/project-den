@@ -1,2 +1,4 @@
 *.exe
 .vscode
+projects/cfiles/games/include/
+projects/cfiles/games/lib/
