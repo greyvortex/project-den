@@ -1,12 +1,18 @@
+// Pong game using raylib
 #include <raylib.h>
 #include <raymath.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 
-int screenWidth = 800;
-int screenHeight = 600;
 
+// Global Variables
+#define screenWidth 800
+#define screenHeight 600
+int leftScore = 0;
+int rightScore = 0;
+
+// Entity Structures : Pong ball , Pong passles and Screen states
 typedef struct{
     float x;
     float y;
@@ -32,21 +38,25 @@ typedef enum {
     STATE_PAUSE,
     STATE_GAMEOVER
 } GameState;
-
 GameState currentState = STATE_MENU;
 GameState previousState = STATE_MENU;
 
-void init_game(circle_entity *ball, rectangle_entity *leftpong , rectangle_entity *rightpong );
-void rendererDuo(circle_entity *ball,rectangle_entity *leftpong , rectangle_entity *rightpong);
-void rendererSolo(circle_entity *ball,rectangle_entity *rightpong);
-void pong_movement(rectangle_entity *leftpong , rectangle_entity *rightpong, GameState state);
-int collision(circle_entity *ball,rectangle_entity *pong);
-void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_entity *rightpong,GameState state);
-void resetBall(circle_entity *ball);
-void loadMenu(GameState *state , circle_entity *ball);
-int btn_logic();
-void renderPauseOverlay();
 
+// Function Prototypes
+void init_game(circle_entity *ball, rectangle_entity *leftpong , rectangle_entity *rightpong ); // game variables initialization
+void pong_movement(rectangle_entity *leftpong , rectangle_entity *rightpong, GameState state);// pong movement handling
+void rendererDuo(circle_entity *ball,rectangle_entity *leftpong , rectangle_entity *rightpong);// Duo mode rendering
+void rendererSolo(circle_entity *ball,rectangle_entity *rightpong); // Solo mode rendering
+void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_entity *rightpong,GameState state); // ball movement and collision handling
+int collision(circle_entity *ball,rectangle_entity *pong); // collision detection between ball and paddle
+void resetBall(circle_entity *ball); // ball position and velocity reset
+void loadMenu(circle_entity *ball); // Main menu rendering and button handling
+void renderPauseOverlay(); // Pause screen rendering
+void GameOverScreen(); // Game over screen rendering and handling
+void DrawScores(); // Score rendering For duo mode
+void UpdateScore(circle_entity *ball); // Score updating based on ball position
+void soloScore(); // Solo mode score handling
+int btn_logic(); // Button logic for menu selection
 
 int main(void)
 {
@@ -56,13 +66,13 @@ int main(void)
 
     srand(time(NULL));
 
-
     InitWindow(screenWidth, screenHeight, "Pong Game");
     SetTargetFPS(60);
     init_game(&circle, &left_pong_entity , &right_pong_entity );
     
     while (!WindowShouldClose())
     {
+    // Handle pause/resume
     if (IsKeyPressed(KEY_P) && currentState != STATE_MENU) {
         if (currentState == STATE_PAUSE) {
             currentState = previousState;
@@ -72,18 +82,21 @@ int main(void)
         }
     }
 
-    if (currentState != STATE_MENU && currentState != STATE_PAUSE) {
+    // Update game logic only if not in menu, pause, or game over
+    if (currentState != STATE_MENU && currentState != STATE_PAUSE && currentState != STATE_GAMEOVER) {
         ball_movement(&circle, &left_pong_entity, &right_pong_entity, currentState);
         pong_movement(&left_pong_entity, &right_pong_entity, currentState);
+        UpdateScore(&circle);
     }
-       
 
+    // Rendering
         BeginDrawing();
         ClearBackground(BLACK);
-        //rendererDuo( &circle,&left_pong_entity,&right_pong_entity);
-        switch(currentState){
+
+        switch(currentState)
+        {
             case STATE_MENU:
-              loadMenu(&currentState, &circle);
+              loadMenu(&circle);
               break;
             case STATE_SOLO:
               rendererSolo( &circle , &right_pong_entity);
@@ -92,25 +105,30 @@ int main(void)
             case STATE_DUO:
               rendererDuo( &circle,&left_pong_entity,&right_pong_entity);
               DrawText("press P to pause", 10, screenHeight - 60, 20, GRAY);
+              DrawScores();
+              break;
+            case STATE_PAUSE:
+              if (IsKeyPressed(KEY_M) && currentState == STATE_PAUSE) 
+              {
+                currentState = STATE_MENU;
+                resetBall(&circle);  // Reset when going back to menu
+              }
+              if (previousState == STATE_SOLO) 
+              {
+                rendererSolo(&circle, &right_pong_entity);
+              } else if (previousState == STATE_DUO) 
+              {
+                rendererDuo(&circle, &left_pong_entity, &right_pong_entity);
+              }
+              renderPauseOverlay();
+              break;
+            case STATE_GAMEOVER:
+              GameOverScreen();
               break;
             default:
-              loadMenu(&currentState, &circle);
+              loadMenu(&circle);
               break; 
-            case STATE_PAUSE:
-            if (IsKeyPressed(KEY_M) && currentState == STATE_PAUSE) {
-            currentState = STATE_MENU;
-            resetBall(&circle);  // Reset when going back to menu
         }
-            if (previousState == STATE_SOLO) {
-                rendererSolo(&circle, &right_pong_entity);
-            } else if (previousState == STATE_DUO) {
-                rendererDuo(&circle, &left_pong_entity, &right_pong_entity);
-            }
-            renderPauseOverlay();
-            break;
-        }
-        printf("%d %d\n", currentState, previousState);
-
         EndDrawing();
 
         if (IsKeyPressed(KEY_ESCAPE)) {
@@ -183,7 +201,7 @@ void pong_movement(rectangle_entity *leftpong, rectangle_entity *rightpong, Game
 }
 
 void rendererDuo(circle_entity *ball,rectangle_entity *leftpong , rectangle_entity *rightpong)
-{
+{ 
     DrawRectangle(leftpong->x, leftpong->y, leftpong->width, leftpong->height, DARKGRAY);
     DrawCircle(ball->x, ball->y, ball->radius, RED);
     DrawRectangle(rightpong->x, rightpong->y, rightpong->width, rightpong->height, DARKGRAY );
@@ -192,6 +210,7 @@ void rendererDuo(circle_entity *ball,rectangle_entity *leftpong , rectangle_enti
     }
     DrawText("W/S - Left Paddle", 10, screenHeight - 40, 20, GRAY);
     DrawText("UP/DOWN - Right Paddle", screenWidth - 230, screenHeight - 40, 20, GRAY);
+    DrawScores();
 }
 
 void rendererSolo(circle_entity *ball,rectangle_entity *pong)
@@ -202,11 +221,11 @@ void rendererSolo(circle_entity *ball,rectangle_entity *pong)
         DrawRectangle(screenWidth / 2 - 2, i, 4, 10, DARKGRAY);
     }
     DrawText("Up arrow/Down arrow - Paddle", 10, screenHeight - 40, 20, GRAY);
+        soloScore();
 }
 
 int collision(circle_entity *ball,rectangle_entity *pong)
 {
-
     return (
         ball-> x + ball-> radius >= pong ->x &&
         ball-> x - ball-> radius <= pong ->x + pong -> width &&
@@ -219,12 +238,13 @@ void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_e
 {
     ball->x += ball->velocity_x;
     ball->y += ball->velocity_y;
-    switch(state){
+    switch(state)
+    {
         case STATE_SOLO:
-        if (ball->x - ball->radius <= 0){
+          if (ball->x - ball->radius <= 0){
             ball->velocity_x = -ball->velocity_x;
             ball->x = ball->radius;
-        }
+          }
           break;
         case STATE_DUO:
 
@@ -240,14 +260,16 @@ void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_e
     }
 
 
-    if (collision(ball , rightpong)){
+    if (collision(ball , rightpong))
+    {
         ball->velocity_x = -ball->velocity_x;
         ball->x = rightpong->x - ball->radius;
         float hitPos = (ball->y - (rightpong->y + rightpong->height / 2)) / (rightpong->height / 2);
         ball->velocity_y += hitPos * 2;
     };
+
     if (ball->y - ball->radius <= 0 || ball->y + ball->radius >= screenHeight) 
-            {
+    {
             ball->velocity_y = -ball->velocity_y;
         
             if (ball->y - ball->radius < 0) {
@@ -257,14 +279,6 @@ void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_e
                 ball->y = screenHeight - ball->radius;
             }
     };
-
-    if (ball->x < 0) {
-        resetBall(ball);
-    }
-
-    if (ball->x > screenWidth) {
-        resetBall(ball);
-    }
 
 }
 
@@ -277,11 +291,12 @@ void resetBall(circle_entity *ball)
     float speed = 5.0f;
     float angle = ((float)rand() / RAND_MAX * PI / 2) - PI / 4;
     int direction = (rand() % 2 == 0) ? 1 : -1;
+
     ball->velocity_x = speed * cos(angle) * direction;
     ball->velocity_y = speed * sin(angle);
 }
 
-void loadMenu(GameState *state,circle_entity *ball) {
+void loadMenu(circle_entity *ball) {
    
     DrawRectangle(250, 450, 100, 50, DARKBLUE);
     DrawText("Solo",260, 460, 30, WHITE);
@@ -292,15 +307,15 @@ void loadMenu(GameState *state,circle_entity *ball) {
 
     switch(btn_logic()){
         case 1:
-        *state = STATE_SOLO;
+        currentState = STATE_SOLO;
         resetBall(ball);
         break;
         case 2:
-        *state = STATE_DUO;
+        currentState = STATE_DUO;
         resetBall(ball);
         break;
         default:
-        *state = STATE_MENU;
+        currentState = STATE_MENU;
         break;
     }
 }
@@ -329,4 +344,54 @@ void renderPauseOverlay() {
     DrawText("PAUSED", screenWidth/2 - 80, screenHeight/2 - 50, 50, WHITE);
     DrawText("Press P to Resume", screenWidth/2 - 120, screenHeight/2 + 20, 25, LIGHTGRAY);
     DrawText("Press M for Menu", screenWidth/2 - 110, screenHeight/2 + 60, 25, LIGHTGRAY);
+}
+
+void GameOverScreen() {
+    DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 200});
+    DrawText("GAME OVER", screenWidth/2 - 100, screenHeight/2 - 50, 50, RED);
+    DrawText("Press M for Menu", screenWidth/2 - 110, screenHeight/2 + 20, 25, LIGHTGRAY);
+    if(IsKeyPressed(KEY_M)) {
+        currentState = STATE_MENU;
+        leftScore = 0;
+        rightScore = 0;
+    }
+}
+
+void DrawScores() {
+    DrawText(TextFormat("%d", leftScore), screenWidth / 4, 20, 40, WHITE);
+    DrawText(TextFormat("%d", rightScore), 3 * screenWidth / 4, 20, 40, WHITE);
+}
+
+void UpdateScore(circle_entity *ball) {
+    // Check if ball went off left edge (right player scores)
+    if (ball->x + ball->radius < 0) 
+    {
+        rightScore++;
+        resetBall(ball);
+        printf("Right player scores! Score: %d - %d\n", leftScore, rightScore);
+        
+        // Check for game over
+        if (leftScore >= 10 || rightScore >= 10) {
+            currentState = STATE_GAMEOVER;
+        }
+    }
+    
+    // Check if ball went off right edge (left player scores)
+    if (ball->x + ball->radius > screenWidth) 
+    {
+        leftScore++;
+        resetBall(ball);
+        printf("Left player scores! Score: %d - %d\n", leftScore, rightScore);
+        
+        // Check for game over
+        if (leftScore >= 10 || rightScore >= 10) {
+            currentState = STATE_GAMEOVER;
+        }
+    }
+}
+
+void soloScore() {
+    DrawText(TextFormat("Score: %d", rightScore), 10, 20, 30, WHITE);
+    if (rightScore > 10) { rightScore++; }
+    if (rightScore >= 10) { currentState = STATE_GAMEOVER; }
 }
