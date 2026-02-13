@@ -11,6 +11,9 @@
 #define screenHeight 600
 int leftScore = 0;
 int rightScore = 0;
+float paddleWidth = 20;
+float paddleHeight = 100;
+float ballRadius = 10;
 
 // Entity Structures : Pong ball , Pong passles and Screen states
 typedef struct{
@@ -43,32 +46,36 @@ GameState previousState = STATE_MENU;
 
 
 // Function Prototypes
-void init_game(circle_entity *ball, rectangle_entity *leftpong , rectangle_entity *rightpong ); // game variables initialization
+void init_game(circle_entity *ball, rectangle_entity *leftpong , rectangle_entity *rightpong, rectangle_entity *opponentpong); // game variables initialization
 void pong_movement(rectangle_entity *leftpong , rectangle_entity *rightpong, GameState state);// pong movement handling
 void rendererDuo(circle_entity *ball,rectangle_entity *leftpong , rectangle_entity *rightpong);// Duo mode rendering
-void rendererSolo(circle_entity *ball,rectangle_entity *rightpong); // Solo mode rendering
-void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_entity *rightpong,GameState state); // ball movement and collision handling
+void rendererSolo(circle_entity *ball,rectangle_entity *rightpong , rectangle_entity *opponentpong); // Solo mode rendering
+void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_entity *rightpong,rectangle_entity *opponentpong, GameState state); // ball movement and collision handling
 int collision(circle_entity *ball,rectangle_entity *pong); // collision detection between ball and paddle
 void resetBall(circle_entity *ball); // ball position and velocity reset
 void loadMenu(circle_entity *ball); // Main menu rendering and button handling
 void renderPauseOverlay(); // Pause screen rendering
 void GameOverScreen(); // Game over screen rendering and handling
-void DrawScores(); // Score rendering For duo mode
+void DrawScores(); // Score rendering 
 void UpdateScore(circle_entity *ball); // Score updating based on ball position
-void soloScore(); // Solo mode score handling
+void opponentLogic(circle_entity *ball, rectangle_entity *opponentpong); // AI opponent logic for solo mode
 int btn_logic(); // Button logic for menu selection
+
+
+
 
 int main(void)
 {
     circle_entity circle;
     rectangle_entity left_pong_entity;
     rectangle_entity right_pong_entity;
+    rectangle_entity opponent_pong;
 
     srand(time(NULL));
 
     InitWindow(screenWidth, screenHeight, "Pong Game");
     SetTargetFPS(60);
-    init_game(&circle, &left_pong_entity , &right_pong_entity );
+    init_game(&circle, &left_pong_entity , &right_pong_entity ,&opponent_pong);
     
     while (!WindowShouldClose())
     {
@@ -83,11 +90,16 @@ int main(void)
     }
 
     // Update game logic only if not in menu, pause, or game over
-    if (currentState != STATE_MENU && currentState != STATE_PAUSE && currentState != STATE_GAMEOVER) {
-        ball_movement(&circle, &left_pong_entity, &right_pong_entity, currentState);
-        pong_movement(&left_pong_entity, &right_pong_entity, currentState);
-        UpdateScore(&circle);
+if (currentState != STATE_MENU && currentState != STATE_PAUSE && currentState != STATE_GAMEOVER) {
+    ball_movement(&circle, &left_pong_entity, &right_pong_entity, &opponent_pong, currentState);
+    pong_movement(&left_pong_entity, &right_pong_entity, currentState);
+    
+    if (currentState == STATE_SOLO) {
+        opponentLogic(&circle, &opponent_pong);  
     }
+    
+    UpdateScore(&circle);
+}
 
     // Rendering
         BeginDrawing();
@@ -99,7 +111,7 @@ int main(void)
               loadMenu(&circle);
               break;
             case STATE_SOLO:
-              rendererSolo( &circle , &right_pong_entity);
+              rendererSolo( &circle , &right_pong_entity,&opponent_pong);
               DrawText("press P to pause", 10, screenHeight - 60, 20, GRAY);
               break;
             case STATE_DUO:
@@ -115,7 +127,7 @@ int main(void)
               }
               if (previousState == STATE_SOLO) 
               {
-                rendererSolo(&circle, &right_pong_entity);
+                rendererSolo(&circle, &right_pong_entity , &opponent_pong);
               } else if (previousState == STATE_DUO) 
               {
                 rendererDuo(&circle, &left_pong_entity, &right_pong_entity);
@@ -140,12 +152,9 @@ int main(void)
     return 0;
 }
 
-void init_game(circle_entity *ball, rectangle_entity *leftpong , rectangle_entity *rightpong)
+void init_game(circle_entity *ball, rectangle_entity *leftpong , rectangle_entity *rightpong , rectangle_entity *opponentpong)
 {
-    // Global Variables
-    float paddleWidth = 20;
-    float paddleHeight = 100;
-    float ballRadius = 10;
+
 
 
     // Initialize left paddle
@@ -162,13 +171,20 @@ void init_game(circle_entity *ball, rectangle_entity *leftpong , rectangle_entit
     rightpong -> x = screenWidth - 25;
     rightpong -> speed = 6.0f ;
 
+    //Opponent Pong (For Solo Mode)
+    opponentpong -> width = paddleWidth;
+    opponentpong -> height = paddleHeight;
+    opponentpong -> y = screenHeight /2;
+    opponentpong -> x = 10;
+    opponentpong -> speed = 5.0f ;
+
 
     // Initialize ball
     ball -> x = screenWidth / 2;
     ball->y = screenHeight / 2;
     ball->radius = ballRadius;
 
-    float speed = 5.0f;
+    float speed = 8.0f;
 
     float angle = ((float)rand() / RAND_MAX * PI / 2) - PI / 4;
     int direction = (rand() % 2 == 0) ? 1 : -1;
@@ -213,15 +229,16 @@ void rendererDuo(circle_entity *ball,rectangle_entity *leftpong , rectangle_enti
     DrawScores();
 }
 
-void rendererSolo(circle_entity *ball,rectangle_entity *pong)
+void rendererSolo(circle_entity *ball,rectangle_entity *pong , rectangle_entity *opponentpong)
 {
     DrawRectangle(pong->x, pong->y, pong->width, pong->height, DARKGRAY);
+    DrawRectangle(opponentpong->x, opponentpong->y, opponentpong->width, opponentpong->height, DARKGRAY);
     DrawCircle(ball->x, ball->y, ball->radius, RED);
     for (int i = 0; i < screenHeight; i += 20) {
         DrawRectangle(screenWidth / 2 - 2, i, 4, 10, DARKGRAY);
     }
     DrawText("Up arrow/Down arrow - Paddle", 10, screenHeight - 40, 20, GRAY);
-        soloScore();
+    DrawScores();
 }
 
 int collision(circle_entity *ball,rectangle_entity *pong)
@@ -234,16 +251,16 @@ int collision(circle_entity *ball,rectangle_entity *pong)
     );
 }
 
-void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_entity *rightpong,GameState state)
+void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_entity *rightpong,rectangle_entity *opponentpong, GameState state)
 {
     ball->x += ball->velocity_x;
     ball->y += ball->velocity_y;
     switch(state)
     {
         case STATE_SOLO:
-          if (ball->x - ball->radius <= 0){
+          if (collision(ball , opponentpong)){
             ball->velocity_x = -ball->velocity_x;
-            ball->x = ball->radius;
+            ball->x = leftpong->x + leftpong->width + ball->radius;
           }
           break;
         case STATE_DUO:
@@ -252,8 +269,6 @@ void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_e
             {
             ball->velocity_x = -ball->velocity_x;
             ball->x = leftpong->x + leftpong->width + ball->radius;
-            float hitPos = (ball->y - (leftpong->y + leftpong->height / 2)) / (leftpong->height / 2);
-            ball->velocity_y += hitPos * 2;
             };
     
           break;
@@ -264,8 +279,6 @@ void ball_movement(circle_entity *ball ,rectangle_entity *leftpong , rectangle_e
     {
         ball->velocity_x = -ball->velocity_x;
         ball->x = rightpong->x - ball->radius;
-        float hitPos = (ball->y - (rightpong->y + rightpong->height / 2)) / (rightpong->height / 2);
-        ball->velocity_y += hitPos * 2;
     };
 
     if (ball->y - ball->radius <= 0 || ball->y + ball->radius >= screenHeight) 
@@ -288,7 +301,7 @@ void resetBall(circle_entity *ball)
     ball->y = screenHeight / 2;
     ball->radius = 10;
 
-    float speed = 5.0f;
+    float speed = 8.0f;
     float angle = ((float)rand() / RAND_MAX * PI / 2) - PI / 4;
     int direction = (rand() % 2 == 0) ? 1 : -1;
 
@@ -307,17 +320,18 @@ void loadMenu(circle_entity *ball) {
 
     switch(btn_logic()){
         case 1:
-        currentState = STATE_SOLO;
-        resetBall(ball);
-        break;
+            currentState = STATE_SOLO;
+            resetBall(ball);
+            break;
         case 2:
-        currentState = STATE_DUO;
-        resetBall(ball);
-        break;
+            currentState = STATE_DUO;
+            resetBall(ball);
+            break;
         default:
-        currentState = STATE_MENU;
-        break;
+            currentState = STATE_MENU;
+            break;
     }
+
 }
 
 int btn_logic(){
@@ -368,8 +382,6 @@ void UpdateScore(circle_entity *ball) {
     {
         rightScore++;
         resetBall(ball);
-        printf("Right player scores! Score: %d - %d\n", leftScore, rightScore);
-        
         // Check for game over
         if (leftScore >= 10 || rightScore >= 10) {
             currentState = STATE_GAMEOVER;
@@ -381,7 +393,6 @@ void UpdateScore(circle_entity *ball) {
     {
         leftScore++;
         resetBall(ball);
-        printf("Left player scores! Score: %d - %d\n", leftScore, rightScore);
         
         // Check for game over
         if (leftScore >= 10 || rightScore >= 10) {
@@ -390,8 +401,33 @@ void UpdateScore(circle_entity *ball) {
     }
 }
 
-void soloScore() {
-    DrawText(TextFormat("Score: %d", rightScore), 10, 20, 30, WHITE);
-    if (rightScore > 10) { rightScore++; }
-    if (rightScore >= 10) { currentState = STATE_GAMEOVER; }
+
+// opponent AI logic for solo mode
+
+void opponentLogic(circle_entity *ball, rectangle_entity *opponentpong) {
+    // Only react when ball is coming toward AI
+    if (ball->velocity_x < 0) {
+        // Predict where ball will be
+        float timeToReach = (ball->x - opponentpong->x) / fabs(ball->velocity_x);
+        float predictedY = ball->y + (ball->velocity_y * timeToReach);
+        
+        // Clamp prediction to screen bounds
+        if (predictedY < 0) predictedY = 0;
+        if (predictedY > screenHeight) predictedY = screenHeight;
+        
+        float paddleCenter = opponentpong->y + opponentpong->height / 2;
+        float distance = predictedY - paddleCenter;
+        
+        if (distance > 10) {
+            opponentpong->y += opponentpong->speed * 0.7;  // Slower = easier
+        } else if (distance < -10) {
+            opponentpong->y -= opponentpong->speed * 0.7;
+        }
+    }
+    if (opponentpong->y < 0) {
+        opponentpong->y = 0;
+    }
+    if (opponentpong->y + opponentpong->height > screenHeight) {
+        opponentpong->y = screenHeight - opponentpong->height;
+    }
 }
